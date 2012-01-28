@@ -1,0 +1,56 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "XBServer", "XBServer\XBServer.vcxproj", "{F3C1841E-67F9-4D23-B9F3-A356DF366490}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RelayPCA9535", "Drivers\RelayPCA9535\RelayPCA9535.vcxproj", "{BD74DA9F-7E2D-4B11-B802-7A8D534297A7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TextLcdArduino", "Drivers\TextLcdArduino\TextLcdArduino.vcxproj", "{F24AD6BC-24E0-492C-8AA3-D66BAD7704F2}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ThermoDS1820", "Drivers\ThermoDS1820\ThermoDS1820.vcxproj", "{EFA8DB35-156A-4FD9-975A-BDBA1FB7379A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ThermoSHT21", "Drivers\ThermoSHT21\ThermoSHT21.vcxproj", "{6E9E5295-6C17-4AD8-992D-14524189A805}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LedDriverTLC59116", "Drivers\LedDriverTLC59116\LedDriverTLC59116.vcxproj", "{0E2DFE0F-13B4-48FF-B386-6CB70C2DACDC}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LedDriverPCA9635", "Drivers\LedDriverPCA9635\LedDriverPCA9635.vcxproj", "{DDA09152-1236-41C8-BBFD-CC5C0432E7D6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F3C1841E-67F9-4D23-B9F3-A356DF366490}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F3C1841E-67F9-4D23-B9F3-A356DF366490}.Debug|Win32.Build.0 = Debug|Win32
+		{F3C1841E-67F9-4D23-B9F3-A356DF366490}.Release|Win32.ActiveCfg = Release|Win32
+		{F3C1841E-67F9-4D23-B9F3-A356DF366490}.Release|Win32.Build.0 = Release|Win32
+		{BD74DA9F-7E2D-4B11-B802-7A8D534297A7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BD74DA9F-7E2D-4B11-B802-7A8D534297A7}.Debug|Win32.Build.0 = Debug|Win32
+		{BD74DA9F-7E2D-4B11-B802-7A8D534297A7}.Release|Win32.ActiveCfg = Release|Win32
+		{BD74DA9F-7E2D-4B11-B802-7A8D534297A7}.Release|Win32.Build.0 = Release|Win32
+		{F24AD6BC-24E0-492C-8AA3-D66BAD7704F2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F24AD6BC-24E0-492C-8AA3-D66BAD7704F2}.Debug|Win32.Build.0 = Debug|Win32
+		{F24AD6BC-24E0-492C-8AA3-D66BAD7704F2}.Release|Win32.ActiveCfg = Release|Win32
+		{F24AD6BC-24E0-492C-8AA3-D66BAD7704F2}.Release|Win32.Build.0 = Release|Win32
+		{EFA8DB35-156A-4FD9-975A-BDBA1FB7379A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{EFA8DB35-156A-4FD9-975A-BDBA1FB7379A}.Debug|Win32.Build.0 = Debug|Win32
+		{EFA8DB35-156A-4FD9-975A-BDBA1FB7379A}.Release|Win32.ActiveCfg = Release|Win32
+		{EFA8DB35-156A-4FD9-975A-BDBA1FB7379A}.Release|Win32.Build.0 = Release|Win32
+		{6E9E5295-6C17-4AD8-992D-14524189A805}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6E9E5295-6C17-4AD8-992D-14524189A805}.Debug|Win32.Build.0 = Debug|Win32
+		{6E9E5295-6C17-4AD8-992D-14524189A805}.Release|Win32.ActiveCfg = Release|Win32
+		{6E9E5295-6C17-4AD8-992D-14524189A805}.Release|Win32.Build.0 = Release|Win32
+		{0E2DFE0F-13B4-48FF-B386-6CB70C2DACDC}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0E2DFE0F-13B4-48FF-B386-6CB70C2DACDC}.Debug|Win32.Build.0 = Debug|Win32
+		{0E2DFE0F-13B4-48FF-B386-6CB70C2DACDC}.Release|Win32.ActiveCfg = Release|Win32
+		{0E2DFE0F-13B4-48FF-B386-6CB70C2DACDC}.Release|Win32.Build.0 = Release|Win32
+		{DDA09152-1236-41C8-BBFD-CC5C0432E7D6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DDA09152-1236-41C8-BBFD-CC5C0432E7D6}.Debug|Win32.Build.0 = Debug|Win32
+		{DDA09152-1236-41C8-BBFD-CC5C0432E7D6}.Release|Win32.ActiveCfg = Release|Win32
+		{DDA09152-1236-41C8-BBFD-CC5C0432E7D6}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
