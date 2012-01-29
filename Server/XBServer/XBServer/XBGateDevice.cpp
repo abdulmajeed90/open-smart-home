@@ -10,12 +10,12 @@ XBGateDevice::XBGateDevice(XBLinkDevice *ptrLinkDevice)
 //	ZERO_MEM(&m_DevHeader,sizeof(XBGateDevHeader));
 //	m_ptrLinkDevice->AddGateDevice(this);
 }
-
+/*
 XBGateDevice::~XBGateDevice()
 {
 //	m_ptrLinkDevice->RemoveGateDevice(this);
 }
-
+*/
 HRESULT XBGateDevice::AddEndPointDevice(XBEndPointDevice *ptrDev)
 {
 	ASSERT(ptrDev);

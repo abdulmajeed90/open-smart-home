@@ -20,6 +20,7 @@ private:
 	HANDLE hProcessingThread;
 	HANDLE hPacketEvent;
 	DWORD dwThreadId;
+	CByteArray m_RxBuffer;
 
 public:
 	XBLinkDevice(void);
@@ -43,7 +44,8 @@ public:
 //	bool IsPacketInBuffer(void *pBuffer, size_t nSize);	//	check if data packet in buffer (XBEndPointDevHeader + Data)
 
 	virtual HRESULT OnPacketRecieve(XBDataPacket *pDataPacket);
-	virtual void OnCharRecieve(CByteArray *pArray);
+//	virtual void OnCharRecieve(CByteArray *pArray);
+	virtual void OnCharRecieve(BYTE ch);
 
 private:
 	static HRESULT WINAPI PacketProcessingThread(LPVOID lpParameter);

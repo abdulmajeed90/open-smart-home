@@ -26,13 +26,9 @@ private:
 
 public:
 	XBDataPacket(void);
-	~XBDataPacket(void);
 	bool IsTimeOut(DWORD dwLifeTime = XB_PACKET_LIFETIME);
 	
-	size_t GetSize(void)
-	{
-		return sizeof(XBEndPointDevHeader) + m_EndPointHeader.Size + m_EndPointHeader.AddrSize + m_EndPointHeader.ExAddrSize;
-	}
+	size_t GetSize(void);
 	
 	static size_t GetGateDevHeaderSize(void)
 	{
@@ -52,12 +48,7 @@ public:
 	}
 
 	bool IsSameDevices(XBDataPacket *pDev);
-	/*
-	size_t GetAddressSize(void)
-	{
-		return (size_t)m_Address.GetCount();
-	}
-	*/
+
 	XBAddress &GetGateAddress(void)	
 	{
 		return m_GateHeader.Address;
@@ -70,6 +61,5 @@ public:
 
 	XBDataPacket& operator=(const XBDataPacket &p);
 
+	size_t GetValidDataSize(void);
 };
-
-//	add timestamp for auto clearance

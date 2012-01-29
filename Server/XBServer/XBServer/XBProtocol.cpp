@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "XBProtocol.h"
+#include "utils.h"
 
 
 XBProtocol::XBProtocol(void)
@@ -10,26 +11,29 @@ XBProtocol::XBProtocol(void)
 size_t XBProtocol::PutXBPacket(XBDataPacket *p)
 {
 	size_t size = p->GetSize();
-	if(size)
+	if(!size)	return 0;
+
+	m_bData.SetSize(size);
+	memcpy(m_bData.GetData(),&p->m_EndPointHeader,sizeof(p->m_EndPointHeader));
+	size = sizeof(p->m_EndPointHeader);
+	if(p->m_EndPointHeader.AddrSize)
 	{
-		m_bData.SetSize(p->GetSize());
-		memcpy(m_bData.GetData(),&p->m_EndPointHeader,sizeof(p->m_EndPointHeader));
-		size = sizeof(p->m_EndPointHeader);
-		if(p->m_EndPointHeader.AddrSize)
-		{
-			memcpy(m_bData.GetData()+size,p->m_Address.GetData(),p->m_EndPointHeader.AddrSize);
-			size+=p->m_EndPointHeader.AddrSize;
-		}
-		if(p->m_EndPointHeader.ExAddrSize)
-		{
-			memcpy(m_bData.GetData()+size,p->m_ExAddress.GetData(),p->m_EndPointHeader.ExAddrSize);
-			size+=p->m_EndPointHeader.ExAddrSize;
-		}
-		if(p->m_EndPointHeader.Size)
-		{
-			memcpy(m_bData.GetData()+size,p->m_Data.GetData(),p->m_EndPointHeader.Size);
-		}
+		memcpy(m_bData.GetData()+size,p->m_Address.GetData(),p->m_EndPointHeader.AddrSize);
+		size+=p->m_EndPointHeader.AddrSize;
 	}
+	if(p->m_EndPointHeader.ExAddrSize)
+	{
+		memcpy(m_bData.GetData()+size,p->m_ExAddress.GetData(),p->m_EndPointHeader.ExAddrSize);
+		size+=p->m_EndPointHeader.ExAddrSize;
+	}
+	//	check if there is any read data to copy in current Command 
+	if(p->GetValidDataSize())
+	{
+		memcpy(m_bData.GetData()+size,p->m_Data.GetData(),p->GetValidDataSize());
+	}
+	
+	XBEndPointDevHeader *ep = (XBEndPointDevHeader *)m_bData.GetData();
+	ep->CRC8 = Crc8(&ep->Size,m_bData.GetCount()-2);	
 
 	return p->GetSize();
 }
@@ -71,7 +75,10 @@ enum XBPacketSignatures XBProtocol::IsPacket(CByteArray *pData)
 		XBEndPointDevHeader *p = (XBEndPointDevHeader *)pData->GetData();
 		if(p->Signature==XBPacketAPI)
 		{
-			if(size>=sizeof(XBEndPointDevHeader) + p->Size + p->AddrSize + p->ExAddrSize)	return XBPacketAPI;
+			size_t nPacketSize = sizeof(XBEndPointDevHeader) + p->Size + p->AddrSize + p->ExAddrSize;
+			if(size>=nPacketSize)
+				if(Crc8(&p->Size,nPacketSize-2)==p->CRC8)	
+					return XBPacketAPI;
 		}
 		else if(p->Signature==XBPacketCMD)
 		{

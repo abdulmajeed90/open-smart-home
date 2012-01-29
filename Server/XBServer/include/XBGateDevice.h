@@ -12,7 +12,7 @@ class XBGateDevice : public XBDevice
 {
 public:
 	XBGateDevice(XBLinkDevice *pLinkDevice);
-	~XBGateDevice();
+//	~XBGateDevice();
 
 private:
 	XBLinkDevice *m_ptrLinkDevice;

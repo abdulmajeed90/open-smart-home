@@ -151,7 +151,6 @@ enum I2CErrors I2C_Error = I2CErrorNone;
 	 		err = XBErrorCmdType;
 	 		break;
 	 }
-	 if(pDevHeader->CmdType!=XBCmdRead || pDevHeader->CmdType!=XBCmdReadAddr)	pDevHeader->Size = 0;
 	return err;
 }
 

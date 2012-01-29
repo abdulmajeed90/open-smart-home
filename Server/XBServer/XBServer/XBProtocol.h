@@ -24,6 +24,5 @@ public:
 	size_t PutData(CByteArray *pData);
 	//	check for packet ready to extract
 	static enum XBPacketSignatures IsPacket(CByteArray *pData);
-	
 };
 

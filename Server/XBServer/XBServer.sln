@@ -15,6 +15,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LedDriverTLC59116", "Driver
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LedDriverPCA9635", "Drivers\LedDriverPCA9635\LedDriverPCA9635.vcxproj", "{DDA09152-1236-41C8-BBFD-CC5C0432E7D6}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решения", "Элементы решения", "{95DF8472-6713-481C-8EF5-535C67395B2F}"
+	ProjectSection(SolutionItems) = preProject
+		XBServer.vsd = XBServer.vsd
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32

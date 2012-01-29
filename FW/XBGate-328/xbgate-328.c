@@ -18,10 +18,33 @@
 #define MCU_VERSION "Atmega328P"
 #define HELP_STR "use dev[index].cmd([addr],[ex-addr],data)"
 
-XBEndPointDevHeader devHeader;
-BYTE bData[256];
-BYTE bAddr[8];
-BYTE bExAddr[8];
+
+BYTE bBuffer[AVR_BUFFER_SIZE];
+
+XBEndPointDevHeader *pDevHeader;
+BYTE *bData;
+BYTE *bAddr;
+BYTE *bExAddr;
+BOOL bSendBack;
+
+enum XBErrors ProcessCmd(void);
+
+
+BYTE Crc8(BYTE *pcBlock, unsigned int len)
+{
+    BYTE crc = 0xFF;
+    unsigned int i;
+
+    while (len--)
+    {
+        crc ^= *pcBlock++;
+
+        for (i = 0; i < 8; i++)
+            crc = crc & 0x80 ? (crc << 1) ^ 0x31 : crc << 1;
+    }
+
+    return crc;
+}
 
 BYTE Hex2Byte(char ch)
 {
@@ -123,28 +146,63 @@ enum XBCmdType GetCmdType(char *strCmd)
 //	? - help
 //	??? - switch mode API/CMD
 //
-
+/*
 enum XBErrors ProcessCmd(void)
 {
 	enum XBErrors err = XBOK;
-	switch(devHeader.DevType)
+	switch(pDevHeader->DevType)
+		{
+			case XBDevI2C:		err = ProcessI2CCmd(pDevHeader,bAddr,bExAddr,bData);	break;
+			case XBDev1Wire:
+			case XBDev2Wire:
+			case XBDev3Wire:
+			case XBDevSPI:
+			case XBDevPWM:
+			case XBDevADC:
+			case XBDevEEPROM:	err = XBErrorDevNoImpl;	break;
+			case XBDevDIO:		err = ProcessDIO(pDevHeader,bAddr,bExAddr,bData);	break;
+			case XBDevAC:
+			case XBDevPower:
+			case XBDevUART:
+			case XBDevMCU:		err = XBErrorDevNoImpl;	break;
+			default:			err = XBErrorDevType;	break;
+		}
+		return err;
+}
+*/
+BYTE GetRealDataSize(void)
+{
+	switch(pDevHeader->CmdType & 0x7F)
+		{
+			case XBCmdRead:
+			case XBCmdReadAddr:
+			case XBCmdReadDelay:
+				return 0;
+				break;
+			default:
+				break;
+		}
+	return pDevHeader->Size;
+}
+
+BOOL IsResponse(void)
+{
+	if(pDevHeader->CmdType & XBCmdAskResponse)
 	{
-		case XBDevI2C:		err = ProcessI2CCmd(&devHeader,bAddr,bExAddr,bData);	break;
-		case XBDev1Wire:
-		case XBDev2Wire:
-		case XBDev3Wire:
-		case XBDevSPI:
-		case XBDevPWM:
-		case XBDevADC:
-		case XBDevEEPROM:	err = XBErrorDevNoImpl;	break;
-		case XBDevDIO:		err = ProcessDIO(&devHeader,bAddr,bExAddr,bData);	break;
-		case XBDevAC:
-		case XBDevPower:
-		case XBDevUART:
-		case XBDevMCU:		err = XBErrorDevNoImpl;	break;
-		default:			err = XBErrorDevType;	break;
+		pDevHeader->Size = 0;		//	cut off data
+		return TRUE;
 	}
-	return err;
+	switch(pDevHeader->CmdType & 0x7F)
+	{
+		case XBCmdRead:
+		case XBCmdReadAddr:
+		case XBCmdReadDelay:
+			return TRUE;
+			break;
+		default:
+			break;
+	}
+	return FALSE;
 }
 
 enum XBErrors ProcessTextCmd(char *str)
@@ -182,23 +240,23 @@ enum XBErrors ProcessParamStr(char *strParams)
 		case 0:	break;
 		case 1:
 			{
-				devHeader.Size = HexStr2Bytes(p[0],bData);
-				if(!devHeader.Size)	err = XBErrorParams;
+				pDevHeader->Size = HexStr2Bytes(p[0],bData);
+				if(!pDevHeader->Size)	err = XBErrorParams;
 				break;
 			}
 		case 2:
 			{
-				devHeader.AddrSize = HexStr2Bytes(p[0],bAddr);
-				devHeader.Size = HexStr2Bytes(p[1],bData);
-				if(!devHeader.Size || !devHeader.AddrSize)	err = XBErrorParams;
+				pDevHeader->AddrSize = HexStr2Bytes(p[0],bAddr);
+				pDevHeader->Size = HexStr2Bytes(p[1],bData);
+				if(!pDevHeader->Size || !pDevHeader->AddrSize)	err = XBErrorParams;
 				break;
 			}
 		case 3:
 			{
-				devHeader.AddrSize = HexStr2Bytes(p[0],bAddr);
-				devHeader.ExAddrSize = HexStr2Bytes(p[1],bExAddr);
-				devHeader.Size = HexStr2Bytes(p[2],bData);
-				if(!devHeader.Size || !devHeader.AddrSize || !devHeader.ExAddrSize)	err = XBErrorParams;
+				pDevHeader->AddrSize = HexStr2Bytes(p[0],bAddr);
+				pDevHeader->ExAddrSize = HexStr2Bytes(p[1],bExAddr);
+				pDevHeader->Size = HexStr2Bytes(p[2],bData);
+				if(!pDevHeader->Size || !pDevHeader->AddrSize || !pDevHeader->ExAddrSize)	err = XBErrorParams;
 				break;
 			}
 		default:
@@ -222,18 +280,18 @@ enum XBErrors ProcessStringCmd(char *str)
 			i++;
 		}
 
-	ZERO_MEM(&devHeader,sizeof(XBEndPointDevHeader));
+	ZERO_MEM(pDevHeader,sizeof(XBEndPointDevHeader));
 
 	//	get device type & index
 	strDev = strtok(str,strDeli);
-	devHeader.DevType = GetDeviceType(strDev);
-	devHeader.DevIndex = GetVarIndex(strDev);
+	pDevHeader->DevType = GetDeviceType(strDev);
+	pDevHeader->DevIndex = GetVarIndex(strDev);
 
-	if(devHeader.DevType==XBDevUnknown)	return ProcessTextCmd(str);
+	if(pDevHeader->DevType==XBDevUnknown)	return ProcessTextCmd(str);
 
 	//	get command type
-	devHeader.CmdType = GetCmdType(strtok(NULL,strDeli));
-	if(devHeader.CmdType==XBCmdUnknown)	return XBErrorCmdType;
+	pDevHeader->CmdType = GetCmdType(strtok(NULL,strDeli));
+	if(pDevHeader->CmdType==XBCmdUnknown)	return XBErrorCmdType;
 
 	//	get parameters
 	strParam = strtok(NULL,strDeli);
@@ -259,49 +317,169 @@ enum XBErrors ProcessTXTPacket(void)
 	return ProcessStringCmd((char *)bData);
 }
 
-enum XBErrors ProcessAPIPacket(void)
+//---------  API packets ----------------------------------
+
+enum XBErrors ProcessCmd(void)
 {
-	enum XBErrors err;
-	BYTE i;
-	BYTE *p = (BYTE *)&devHeader;
-	p++;
-
-	//	read header after Signature byte
-	for(i=0;i<sizeof(XBEndPointDevHeader)-1;i++)
-		p[i] = UARTReadChar();
-	//	read address
-	for(i=0;i<devHeader.AddrSize;i++)
-		bAddr[i] = UARTReadChar();
-	//	read extended address
-	for(i=0;i<devHeader.ExAddrSize;i++)
-		bExAddr[i] = UARTReadChar();
-	//	read data
-	for(i=0;i<devHeader.Size;i++)
-		bData[i] = UARTReadChar();
-
-	err = ProcessCmd();
-	if(devHeader.Signature==XBPacketAPIAnsw)
+	enum XBErrors err = XBOK;
+	LED_PORT = 1 << LED1;
+	switch(pDevHeader->DevType)
 	{
-		//	add Error field into DevHeader ?
-		devHeader.Error = err;
-		p = (BYTE *)&devHeader;
-		for(i=0;i<sizeof(XBEndPointDevHeader);i++)
-			UARTWriteChar(p[i]);
-		for(i=0;i<devHeader.AddrSize;i++)
-			UARTWriteChar(bAddr[i]);
-		for(i=0;i<devHeader.ExAddrSize;i++)
-			UARTWriteChar(bExAddr[i]);
-		for(i=0;i<devHeader.Size;i++)
-			UARTWriteChar(bData[i]);
+		case XBDevI2C:		err = ProcessI2CCmd(pDevHeader,bAddr,bExAddr,bData);	break;
+		case XBDev1Wire:
+		case XBDev2Wire:
+		case XBDev3Wire:
+		case XBDevSPI:
+		case XBDevPWM:
+		case XBDevADC:
+		case XBDevEEPROM:	err = XBErrorDevNoImpl;	break;
+		case XBDevDIO:		err = ProcessDIO(pDevHeader,bAddr,bExAddr,bData);	break;
+		case XBDevAC:
+		case XBDevPower:
+		case XBDevUART:
+		case XBDevMCU:		err = XBErrorDevNoImpl;	break;
+		default:			err = XBErrorDevType;	break;
 	}
+	LED_PORT = 0 << LED1;
 	return err;
 }
 
+enum XBErrors ProcessAPICmd(void)
+{
+	BYTE i;
+	enum XBErrors err = XBOK;
+	switch(pDevHeader->CmdType & 0x7F)
+	{
+		case XBCmdWrite:
+		case XBCmdWriteAddr:
+		case XBCmdWriteDelay:
+		{
+			for(i=0;i<pDevHeader->Size;i++)		bData[i] = UARTReadChar();
+			if(Crc8(&pDevHeader->Size,sizeof(XBEndPointDevHeader) + pDevHeader->AddrSize + pDevHeader->ExAddrSize + pDevHeader->Size - 2)==pDevHeader->CRC8)
+				err = ProcessCmd();
+			else err = XBErrorCrc;
+			pDevHeader->Size = 0;		//	clear size of data send back
+			break;
+		}
+		case XBCmdRead:
+		case XBCmdReadAddr:
+		case XBCmdReadDelay:
+		{
+			if(Crc8(&pDevHeader->Size,sizeof(XBEndPointDevHeader) + pDevHeader->AddrSize + pDevHeader->ExAddrSize - 2)==pDevHeader->CRC8)
+				err = ProcessCmd();
+			else
+				err = XBErrorCrc;
+			bSendBack = TRUE;		//	send data back in any case
+			break;
+		}
+		case XBCmdInit:
+		case XBCmdReset:
+		case XBCmdInterrupt:
+		case XBCmdError:
+		case XBCmdAskResponse:
+		default:
+		{
+			pDevHeader->Size = 0;
+			err = XBErrorCmdType;
+			break;
+		}
+	}
+	if(pDevHeader->CmdType&XBCmdAskResponse)	bSendBack = TRUE;
+	return err;
+}
+
+enum XBErrors ProcessAPIPacket(void)
+{
+	BYTE i;
+	BYTE n=1;
+	enum XBErrors err = XBOK;
+	BYTE *p = (BYTE *)pDevHeader;
+
+//	LED_PORT = 1 << LED1;
+	bSendBack = FALSE;
+
+	//	read header after Signature byte (it'a already read)
+	for(i=0;i<sizeof(XBEndPointDevHeader)-1;i++)
+		p[n++] = UARTReadChar();
+	bAddr =  bBuffer + sizeof(XBEndPointDevHeader);
+	bExAddr = bAddr + pDevHeader->AddrSize;
+	bData = bExAddr + pDevHeader->ExAddrSize;
+	for(i=0;i<pDevHeader->AddrSize;i++)			p[n++] = UARTReadChar();
+	for(i=0;i<pDevHeader->ExAddrSize;i++)		p[n++] = UARTReadChar();
+
+	err = ProcessAPICmd();
+	if(bSendBack==TRUE)
+	{
+		p = (BYTE *)pDevHeader;
+		pDevHeader->Error = err;
+		if(err!=XBOK)	pDevHeader->Size = 0;		//	don't send data back in a case of error
+		pDevHeader->CRC8 = Crc8(&pDevHeader->Size,sizeof(XBEndPointDevHeader) + pDevHeader->AddrSize + pDevHeader->ExAddrSize + pDevHeader->Size - 2);
+		for(i=0;i<sizeof(XBEndPointDevHeader);i++)	UARTWriteChar(*p++);
+		for(i=0;i<pDevHeader->AddrSize;i++)			UARTWriteChar(*p++);
+		for(i=0;i<pDevHeader->ExAddrSize;i++)		UARTWriteChar(*p++);
+		for(i=0;i<pDevHeader->Size;i++)				UARTWriteChar(*p++);
+	}
+//	LED_PORT = 0 << LED1;
+	return err;
+}
+/*
+enum XBErrors ProcessAPIPacket(void)
+{
+	enum XBErrors err;
+	BYTE size = 0;
+	BYTE i = 0;
+	BYTE n = 1;
+	BYTE *p = (BYTE *)pDevHeader;
+
+	//	read header after Signature byte (it'a already read)
+	for(i=0;i<sizeof(XBEndPointDevHeader)-1;i++)
+		p[n++] = UARTReadChar();
+
+	bAddr =  bBuffer + sizeof(XBEndPointDevHeader);
+	bExAddr = bAddr + pDevHeader->AddrSize;
+	bData = bExAddr + pDevHeader->ExAddrSize;
+
+	//	read address
+	for(i=0;i<pDevHeader->AddrSize;i++)
+		p[n++] = UARTReadChar();
+	//	read extended address
+	for(i=0;i<pDevHeader->ExAddrSize;i++)
+		p[n++] = UARTReadChar();
+	//	read data if needed
+	size = GetRealDataSize();
+	for(i=0;i<size;i++)
+		p[n++] = UARTReadChar();
+
+	if(Crc8(&pDevHeader->Size,n-2)==pDevHeader->CRC8)
+	{
+		LED_PORT = 1 << LED1;
+		err = ProcessCmd();
+		LED_PORT = 0 << LED1;
+		if(IsResponse()==TRUE)
+		{
+			pDevHeader->Error = err;
+			p = (BYTE *)pDevHeader;
+			pDevHeader->CRC8 = Crc8(&pDevHeader->Size,sizeof(XBEndPointDevHeader)+pDevHeader->AddrSize+pDevHeader->ExAddrSize+pDevHeader->Size-2);
+			for(i=0;i<sizeof(XBEndPointDevHeader);i++)
+				UARTWriteChar(p[i]);
+			for(i=0;i<pDevHeader->AddrSize;i++)
+				UARTWriteChar(bAddr[i]);
+			for(i=0;i<pDevHeader->ExAddrSize;i++)
+				UARTWriteChar(bExAddr[i]);
+			for(i=0;i<pDevHeader->Size;i++)
+				UARTWriteChar(bData[i]);
+		}
+	}
+	else err = XBErrorCrc;
+	return err;
+}
+*/
 int main(void)
 {
 	BYTE ch;
 	enum XBErrors err = S_OK;
 
+	pDevHeader = (XBEndPointDevHeader *)bBuffer;
 	HW_Init();
 
 	LED_DDR = 1;
@@ -309,19 +487,12 @@ int main(void)
 	while (1)
 	{
 		ch = UARTReadChar();
-		if(ch==XBPacketAPI || ch==XBPacketAPIAnsw)
+		if(ch==XBPacketAPI)
 		{
-			devHeader.Signature = ch;
+			pDevHeader->Signature = ch;
 			err = ProcessAPIPacket();
-/*			if(err!=XBOK)
-			{
-				char s[4];
-				sprintf(s,"%02X\r",err);
-				UARTWriteString(s);
-			}
-*/
 		}
-		else if(ch==XBPacketCMD)
+		/*else if(ch==XBPacketCMD)
 		{
 			err = ProcessTXTPacket();
 			if(err!=XBOK)
@@ -331,6 +502,7 @@ int main(void)
 				UARTWriteString(s);
 			}
 		}
+		*/
 	}
 	return 0;
 }

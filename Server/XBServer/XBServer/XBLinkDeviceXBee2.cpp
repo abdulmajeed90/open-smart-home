@@ -35,19 +35,8 @@ HRESULT XBLinkDeviceXBee2::Read(XBDataPacket *pDestPacket)
 		hr = m_Comm.Write(m_XbProtocol.GetData(),m_XbProtocol.GetSize());
 	if(hr!=S_OK)	return hr;
 
-	/*
-
-
-	if(m_Comm.Write(&pDestPacket->m_EndPointHeader,sizeof(pDestPacket->m_EndPointHeader))!=S_OK)	return E_FAIL;
-	if(pDestPacket->m_EndPointHeader.AddrSize)
-		m_Comm.Write(pDestPacket->m_Address.GetData(),pDestPacket->m_Address.GetCount());
-	if(pDestPacket->m_EndPointHeader.ExAddrSize)
-		m_Comm.Write(pDestPacket->m_ExAddress.GetData(),pDestPacket->m_ExAddress.GetCount());
-	*/
-//	if(m_Comm.Write(&pDestPacket->m_Packet,pDestPacket->GetEndPointDevHeaderSize())!=S_OK)	return E_FAIL;
-
 	int count = 0;
-	for(int n=0;n<100;n++)
+	for(int n=0;n<30;n++)		//	wait for 3 seconds for answer
 	{
 		Sleep(100);
 		count = m_DataPackets.GetCount();

@@ -8,9 +8,9 @@ DWORD abs_diff(DWORD x, DWORD y)
 	return y-x;
 }
 
-unsigned char Crc8(unsigned char *pcBlock, unsigned int len)
+BYTE Crc8(BYTE* pcBlock, unsigned int len)
 {
-    unsigned char crc = 0xFF;
+    BYTE crc = 0xFF;
     unsigned int i;
  
     while (len--)

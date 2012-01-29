@@ -15,7 +15,7 @@ CommDev::CommDev(XBLinkDevice *ptrLinkDev)
 	dwReadThreadId = 0;
 	ZERO_MEM(&m_dcb,sizeof(m_dcb));
 
-	m_RxBuffer.SetSize(4096,256);		//	set size to 4K, grow by 1k step
+//	m_RxBuffer.SetSize(4096,256);		//	set size to 4K, grow by 1k step
 	InitializeCriticalSectionAndSpinCount(&m_CriticalSection,0x00000400);
 
 	timeLastRx = 0;
@@ -31,6 +31,7 @@ CommDev::~CommDev(void)
 //	garbage cleaning from a RX buffer
 HRESULT WINAPI CommDev::CleaningThread(LPVOID lpParameter)
 {
+	/*
 	CommDev* pThis = (CommDev *)lpParameter;
 	HANDLE hTimer = NULL;
 	LARGE_INTEGER liDueTime;
@@ -53,6 +54,7 @@ HRESULT WINAPI CommDev::CleaningThread(LPVOID lpParameter)
 				LeaveCriticalSection(&pThis->m_CriticalSection);
 		}
 	}
+	*/
 	return S_OK;
 }
 
@@ -60,7 +62,7 @@ HRESULT WINAPI CommDev::ReadingThread(LPVOID lpParameter)
 {
 	DWORD dwCommEvent;
 	DWORD dwRead;
-	char  chRead;
+	BYTE  chRead;
 	OVERLAPPED osStatus  = {0};
 
 	CommDev* pThis = (CommDev *)lpParameter;
@@ -75,15 +77,19 @@ HRESULT WINAPI CommDev::ReadingThread(LPVOID lpParameter)
 	   if (WaitCommEvent(pThis->m_hComm, (LPDWORD)&dwCommEvent, NULL )) 
 	   {
 		  do {
+			  chRead = 0;
 			 if (ReadFile(pThis->m_hComm, &chRead, 1, (LPDWORD)&dwRead, &osStatus ))
 			 {
-				EnterCriticalSection(&pThis->m_CriticalSection); 
-
-				pThis->m_RxBuffer.Add(chRead);
-				pThis->timeLastRx = GetTickCount();
-
-				LeaveCriticalSection(&pThis->m_CriticalSection);
-				pThis->m_pLinkDevice->OnCharRecieve(&pThis->m_RxBuffer);
+				 if(dwRead==1)
+				 {
+					EnterCriticalSection(&pThis->m_CriticalSection); 
+					_tprintf(_T("%02x\t"),chRead);
+	//				pThis->m_RxBuffer.Add(chRead);
+					pThis->timeLastRx = GetTickCount();
+					LeaveCriticalSection(&pThis->m_CriticalSection);
+	//				pThis->m_pLinkDevice->OnCharRecieve(&pThis->m_RxBuffer);
+					pThis->m_pLinkDevice->OnCharRecieve(chRead);
+				 }
 			 }
 			 else
 				break;
@@ -170,7 +176,7 @@ HRESULT CommDev::Write(void * pSrcData, size_t nDataSize)
    CloseHandle(osWrite.hEvent);
    return hr;
 }
-
+/*
 size_t	CommDev::GetBufferDataSize(void)
 {
 	return (size_t)m_RxBuffer.GetCount();
@@ -179,3 +185,4 @@ size_t	CommDev::GetBufferSize(void)
 {
 	return (size_t)m_RxBuffer.GetSize();
 }
+*/

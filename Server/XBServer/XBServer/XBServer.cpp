@@ -134,6 +134,7 @@ int limit = 64;
 #define RG 1
 #define GB 2
 #define BR 3
+unsigned int count = 0;
 
 int cycle(XBLedDriver *dev, int which, const int * led)
 {
@@ -164,9 +165,10 @@ int cycle(XBLedDriver *dev, int which, const int * led)
         dev->SetLedPWM(a+8, (limit - i)*256);
 		dev->SetLedPWM(b+12, i*256);
         dev->SetLedPWM(a+12, (limit - i)*256);
-		_tprintf(_T("."));
+		_tprintf(_T("%i\r"),count++);
+	//	_tprintf(_T("."));
 		dev->Write();
-        Sleep(20);
+        Sleep(100);
 		ret = _kbhit();
 		if(ret)	break;
     }
@@ -175,6 +177,7 @@ int cycle(XBLedDriver *dev, int which, const int * led)
 
 int Start(void)
 {
+	HRESULT hr = S_OK;
 	int ret = 0;
 	_tprintf(_T("XBServer started...\n"));
 
@@ -200,15 +203,14 @@ int Start(void)
 			BYTE addr=0xE0;
 			XBLedDriver *dev = (XBLedDriver *)(_Create(pGateDev));
 			dev->SetAddress(addr);
-			//	moved to XBEndPointDevice constructor
-	//		if(pGateDev->AddEndPointDevice(dev)==S_OK)	
+			//	move to XBEndPointDevice constructor ?
+			if(pGateDev->AddEndPointDevice(dev)==S_OK)	
 			{
-				dev->InitDefault();
-//				dev->Write();
-//				dev->Read();
-//				_getch();
-//				if(dev->Read()==S_OK)
+				hr = dev->Read();
+				if(hr==S_OK)
 				{
+					_tprintf(_T("\nRead device ok\n"));
+					dev->InitDefault();
 					dev->SetSleepMode(false);
 					for(int i=0;i<16;i++)
 					{
@@ -224,10 +226,13 @@ int Start(void)
 					dev->SetSleepMode(true);
 					dev->Write();
 				}
+				else _tprintf(_T("Read device error : 0x%x\n"),hr);
 			}
 			if(dev)	_Delete(dev);
 		}
 		FreeLibrary(hModule);
+		SAFE_DELETE(pGateDev);
+//		SAFE_DELETE(pLinkDev);
 	}
 	else
 	{

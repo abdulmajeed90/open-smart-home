@@ -18,8 +18,8 @@ public:
 	//	read all inside ReadThread
 	//	HRESULT Read(void * pDestData, size_t nDataSize);
 	
-	size_t	GetBufferDataSize(void);
-	size_t	GetBufferSize(void);
+//	size_t	GetBufferDataSize(void);
+//	size_t	GetBufferSize(void);
 
 	static HRESULT WINAPI ReadingThread(LPVOID lpParameter);
 	static HRESULT WINAPI CleaningThread(LPVOID lpParameter);
@@ -28,7 +28,7 @@ private:
 	XBLinkDevice *m_pLinkDevice;
 //	size_t m_iRdIndex, m_iRwIndex, m_iRxCounter;
 
-	CByteArray m_RxBuffer;
+//	CByteArray m_RxBuffer;
 	DWORD timeLastRx;
 
 	CRITICAL_SECTION m_CriticalSection; 

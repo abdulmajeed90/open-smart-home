@@ -8,6 +8,8 @@ XBLinkDevice::XBLinkDevice(void)
 	hProcessingThread = NULL;
 	hPacketEvent = NULL;
 	dwThreadId = 0;
+	m_RxBuffer.SetSize(4096,256);
+	m_RxBuffer.RemoveAll();
 	InitializeCriticalSectionAndSpinCount(&m_CriticalSection,0x00000400);
 }
 
@@ -110,6 +112,27 @@ HRESULT WINAPI XBLinkDevice::PacketProcessingThread(LPVOID lpParameter)
 	return S_OK;
 }
 
+void XBLinkDevice::OnCharRecieve(BYTE ch)
+{
+	m_RxBuffer.Add(ch);
+	if(XBProtocol::IsPacket(&m_RxBuffer)==XBPacketUnknown)	return;
+	size_t nSize = m_XbProtocol.PutData(&m_RxBuffer);
+	if(nSize)
+	{
+		XBDataPacket packet;
+		if(m_XbProtocol.GetXBPacket(&packet))
+		{
+			//	synchronize with processing thread
+			EnterCriticalSection(&m_CriticalSection);
+			//	add packet into the queue
+			m_DataPackets.Add(packet);
+			LeaveCriticalSection(&m_CriticalSection); 
+			SetEvent(hPacketEvent);
+		}
+		m_RxBuffer.RemoveAt(0,nSize);
+	}
+}
+/*
 void XBLinkDevice::OnCharRecieve(CByteArray *pArray)
 {
 	if(XBProtocol::IsPacket(pArray)==XBPacketUnknown)	return;
@@ -126,46 +149,8 @@ void XBLinkDevice::OnCharRecieve(CByteArray *pArray)
 			SetEvent(hPacketEvent);
 		}
 	}
-
-	/*
-	BYTE *pPacket = pArray->GetData();
-	size_t sz = pArray->GetCount();
-	if(XBDataPacket::GetMinSize()>sz)	return;		
-
-	if(IsPacketInBuffer(pPacket,sz))
-	{
-		XBDataPacket packet;
-		XBEndPointDevHeader *pDevHeader = (XBEndPointDevHeader *)pPacket;
-//		packet.m_GateHeader.DataSize = pDevHeader->Size + pDevHeader->AddrSize + pDevHeader->ExAddrSize;
-
-	//	packet.SetGateAddress((BYTE *)"GateDev");
-
-		if(pDevHeader->AddrSize)
-		{
-			packet.m_Address.SetSize(pDevHeader->AddrSize);
-			memcpy(packet.m_Address.GetData(),pArray->GetData() + sizeof(XBEndPointDevHeader),pDevHeader->AddrSize);
-		}
-		if(pDevHeader->ExAddrSize)
-		{
-			packet.m_ExAddress.SetSize(pDevHeader->ExAddrSize);
-			memcpy(packet.m_ExAddress.GetData(),pArray->GetData() + sizeof(XBEndPointDevHeader) + pDevHeader->AddrSize,pDevHeader->ExAddrSize);
-		}
-
-		if(pDevHeader->Size)
-		{
-			packet.m_Data.SetSize(pDevHeader->Size);
-			memcpy(packet.m_Data.GetData(),pArray->GetData() + sizeof(XBEndPointDevHeader) + pDevHeader->AddrSize + pDevHeader->ExAddrSize,pDevHeader->Size);
-		}
-			
-	//	synchronize with processing thread
-		EnterCriticalSection(&m_CriticalSection);
-	//	add packet into the queue
-		m_DataPackets.Add(packet);
-		LeaveCriticalSection(&m_CriticalSection); 
-		SetEvent(hPacketEvent);
-	}
-	*/
 }
+*/
 /*
 bool XBLinkDevice::IsPacketInBuffer(void *pBuffer, size_t nSize)
 {

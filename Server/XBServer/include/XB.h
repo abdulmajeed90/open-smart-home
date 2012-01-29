@@ -35,7 +35,15 @@ typedef unsigned long       DWORD;
 typedef int                 BOOL;
 typedef unsigned char       BYTE;
 typedef unsigned short      WORD;
-//typedef unsigned char		XBError;
+// typedef unsigned char		BOOL;
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
 
 // For BINARY constants defining ***********************************************************************************
 
@@ -95,9 +103,6 @@ using:
 #define XB_PACKET_CMD_EOL 0x0D
 
 
-//#define XB_PACKET_SIGNATURE 0xA5	//	signature for API mode
-
-
 //---	Enumirations ---------
 
 enum XBLinkDeviceTypes 
@@ -154,38 +159,41 @@ enum XBErrors
 	XBErrorCmdType,		//	wrong command type
 	XBErrorCmdLength,	//	packet size error
 	XBErrorParams,		//	invalid parameters
+	XBErrorCrc			//	packet CRC error
 };
 
 enum XBCmdType
 {
 	XBCmdUnknown = 0,
-	XBCmdInit,			//	i
-	XBCmdReset,			//	rst
-	XBCmdWrite,			//	w
-	XBCmdWriteAddr,		//	wa
-	XBCmdRead,			//	r
-	XBCmdReadAddr,		//	ra
-	XBCmdInterrupt,		//	int
-	XBCmdError,			//	err
-	XBCmdWriteDelay,	//	wd
-	XBCmdReadDelay,		//	rd
+	XBCmdInit,				//	i
+	XBCmdReset,				//	rst
+	XBCmdWrite,				//	w
+	XBCmdWriteAddr,			//	wa
+	XBCmdRead,				//	r
+	XBCmdReadAddr,			//	ra
+	XBCmdInterrupt,			//	int
+	XBCmdError,				//	err
+	XBCmdWriteDelay,		//	wd
+	XBCmdReadDelay,			//	rd
+	XBCmdAskResponse=0x80,	//	rd		//	MSB means returning a data at any command
 };
 
 enum XBPacketSignatures
 {
 	XBPacketUnknown = 0,
 	XBPacketAPI = 0xA5,
-	XBPacketAPIAnsw = 0xA7,
 	XBPacketCMD = '?'
 };
 
 #ifndef __AVR_ARCH__
 #pragma pack(1)
 #endif
+
+//	Basic header structure of communication protocol
 typedef struct
 {
 	BYTE Signature;		//	signature of packet (0xA5 for data packer)
-	BYTE CRC8;			//	crc of following data
+	BYTE CRC8;			//	crc of data, followed by this field
 	BYTE Size;			//	size of data followed by this structure after address fields
 	BYTE Error;			//	error code
 	BYTE DevType;		//	device type:	see XBDevTypes union
@@ -196,8 +204,14 @@ typedef struct
 
 	//	BYTE Addr[AddrSize]
 	//	BYTE ExAddr[ExAddrSize]
-	//	BYTE Data [Size - 4 - AddrSize - ExAddrSize]
+	//	BYTE Data [Size]
 } XBEndPointDevHeader;
+
+
+#define XB_DATA_SIZE_MAX 256		//	maximum data size on API packet
+#define XB_ARRDESS_SIZE_MAX 8		//	maximum address size in API packet
+
+#define AVR_BUFFER_SIZE sizeof(XBEndPointDevHeader) + XB_DATA_SIZE_MAX + XB_ARRDESS_SIZE_MAX*2		//	buffer size for packet processing
 
 #ifndef S_OK
 #define S_OK XBOK

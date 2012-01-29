@@ -10,10 +10,6 @@ XBDataPacket::XBDataPacket(void)
 	ZERO_MEM(&m_EndPointHeader,sizeof(m_EndPointHeader));
 }
 
-XBDataPacket::~XBDataPacket(void)
-{
-
-}
 XBDataPacket& XBDataPacket::operator=(const XBDataPacket &p)
 {
 	m_GateHeader.Address = p.m_GateHeader.Address;
@@ -30,31 +26,36 @@ XBDataPacket& XBDataPacket::operator=(const XBDataPacket &p)
 	return *this;
 }
 
-/*
-void XBDataPacket::operator =(const XBDataPacket &p)
-{
-	memcpy(&m_GateHeader,&p.m_GateHeader,sizeof(m_GateHeader));
-	memcpy(&m_Packet,&p.m_Packet,sizeof(m_Packet));
-	m_Time = GetTickCount();
-}
-*/
 bool XBDataPacket::IsTimeOut(DWORD dwLifeTime)
 {
 	DWORD t = GetTickCount();
 	if(abs_diff(t,m_Time)>XB_PACKET_LIFETIME)	return true;
 	return false;
 }
-/*
-void XBDataPacket::SetGateAddress(BYTE *pAddr)
-{
-	m_GateHeader.Address
-	memcpy(m_Address,pAddr,DEV_ADDRESS_SIZE_MAX);
-}
-*/
+
 bool XBDataPacket::IsSameDevices(XBDataPacket *pDev)
 {
 	if(GetGateAddress()==pDev->GetGateAddress())
 		if(GetAddress()==pDev->GetAddress())
 			if(m_EndPointHeader.DevType == pDev->m_EndPointHeader.DevType)		return true;
 	return false;
+}
+
+size_t XBDataPacket::GetSize(void)
+{
+	return sizeof(XBEndPointDevHeader) + GetValidDataSize() + m_EndPointHeader.AddrSize + m_EndPointHeader.ExAddrSize;
+}
+
+size_t XBDataPacket::GetValidDataSize(void)
+{
+	switch(m_EndPointHeader.CmdType)
+	{
+		case XBCmdRead:
+		case XBCmdReadAddr:
+		case XBCmdReadDelay:
+			return 0;
+		default:
+			break;
+	}
+	return m_EndPointHeader.Size;
 }

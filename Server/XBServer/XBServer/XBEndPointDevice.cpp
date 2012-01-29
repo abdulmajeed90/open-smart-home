@@ -10,6 +10,8 @@ XBEndPointDevice::XBEndPointDevice(XBGateDevice *pGateDevice)
 	m_DevHeader.CmdType = XBCmdUnknown;
 	m_DevHeader.Size = 0;
 	m_DevHeader.Signature = XBPacketAPI;
+	m_DevHeader.CRC8 = 0xFF;
+	m_DevHeader.Error = 0;
 	m_ptrDeviceData = NULL;
 	m_nDeviceDataSize = 0;
 //	m_ptrGateDevice->AddEndPointDevice(this);
@@ -24,16 +26,17 @@ HRESULT XBEndPointDevice::Write(void *ptrSrcData, size_t nSize)
 {
 	XBDataPacket packet;
 	ASSERT(ptrSrcData);
-
-	
-	m_DevHeader.Size = nSize;
-	memcpy(&packet.m_EndPointHeader, &m_DevHeader, sizeof(m_DevHeader));
+		
 	packet.m_Address = m_Address;
 	packet.m_ExAddress = m_ExAddress;
 	if(m_ExAddress.GetCount())
 		m_DevHeader.CmdType = XBCmdWriteAddr;
 	else
 		m_DevHeader.CmdType = XBCmdWrite;
+
+	m_DevHeader.Size = nSize;
+	memcpy(&packet.m_EndPointHeader, &m_DevHeader, sizeof(m_DevHeader));
+
 	packet.m_Data.SetSize(nSize);
 	memcpy(packet.m_Data.GetData(),ptrSrcData,nSize);
 	return m_ptrGateDevice->Write(&packet);
@@ -44,17 +47,23 @@ HRESULT XBEndPointDevice::Read(void *ptrSrcData, size_t nSize)
 
 	HRESULT hr = S_OK;
 	XBDataPacket packet;
-	m_DevHeader.CmdType = XBCmdRead;
-	m_DevHeader.Size = nSize;
-		
-	memcpy(&packet.m_EndPointHeader, &m_DevHeader, sizeof(m_DevHeader));
+	
 	packet.m_Address = m_Address;
 	packet.m_ExAddress = m_ExAddress;
 
+	if(m_ExAddress.GetCount())
+		m_DevHeader.CmdType = XBCmdReadAddr;
+	else
+		m_DevHeader.CmdType = XBCmdRead;
+	m_DevHeader.Size = nSize;
+		
+	memcpy(&packet.m_EndPointHeader, &m_DevHeader, sizeof(m_DevHeader));
+	
 	hr = m_ptrGateDevice->Read(&packet);
 	if(hr!=S_OK)	return hr;
-
+	
 	//	check for correspinding nSize and packet.m_Data.GetCount()
+	packet.m_Data.SetSize(nSize);
 	memcpy(ptrSrcData,packet.m_Data.GetData(),nSize);
 	return hr;
 }
